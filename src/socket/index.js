@@ -23,10 +23,11 @@ module.exports = function (socketIo) {
         if (firstVisit) {
           socket.join(roomName);
         }
-
-        if (requestData.nickname === undefined) { 
-          return;
-        }
+        // TODO : 나중에 해제 필요
+        // console.log(requestData.content)
+        // if (requestData.nickname === undefined) { 
+        //   return;
+        // }
 
         const responseData = {
           ...requestData,
