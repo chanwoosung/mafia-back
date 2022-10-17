@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Account = require('../dto/account');
+const Room = require('../dto/room');
 router.get('/', (req, res) => {
     Account.createCollection();
     res.send('Welcome Home')
@@ -32,9 +33,53 @@ router.get('/confirm', (req, res) => {
     }
   })
 });
-router.get('/:name', (req, res) => {
-//     Account.find({ nickname: req.params.name }, (err, user) => {
-//     res.render('main', { user: user } );
-//   });
+
+router.post('/make-room', (req, res) => {
+    console.log(req.body);
+    const newRoom = new Room({
+        roomName: req.body.roomName,
+        amountCitizen: req.body.amountCitizen,
+        amountMafia: req.body.amountMafia,
+    })
+    newRoom.save((err, data) => {
+        if(err) {
+            console.log(err);
+        } else {
+            console.log(data);
+            res.send({state:true,roomId: data._id});
+        }
+    });
 });
+
+router.post('/join-room', (req, res) => {
+    (async()=>{
+        await Room.findOneAndUpdate({
+            _id:req.body.roomId
+        }
+            ,{$set: 
+                { userList: [{
+                        ip: req.body.ip,
+                        nickname: req.body.nickname,
+                    }] 
+                }
+            }
+        ).then(() => {
+            res.send({state:true});
+        }).catch(err => {
+            res.send({state:false,err:err});
+        });
+    })();
+});
+
+router.get('/get-rooms', (req, res) => {
+    (async()=>{
+        await Room.find()
+        .then((data) => {
+            res.send({data:data});
+        }).catch(err => {
+            res.send({state:false,err:err});
+        });
+    })();
+});
+
 module.exports = router;

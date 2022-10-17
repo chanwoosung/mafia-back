@@ -23,6 +23,7 @@ const colors = require("colors/safe");
 const socket = require("./src/socket");
 
 const port = process.env.PORT;
+app.use(express.json());
 app.use(cors({ origin: process.env.FRONT_URL, credentials: true }));
 app.use('/',route);
 
