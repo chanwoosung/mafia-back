@@ -30,6 +30,11 @@ const roomSchema = new mongoose.Schema({
         ip: String,
         nickname: String,
     }],
+    process: Boolean,
+    roomOwner: {
+        ip: String,
+        nickname: String,
+    }
 });
 
 module.exports = mongoose.model('Rooms', roomSchema);

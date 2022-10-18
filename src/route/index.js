@@ -8,7 +8,6 @@ router.get('/', (req, res) => {
 });
 router.get('/confirm', (req, res) => {
     Account.findOne({ip:req.query.ip},(err, account)=> {
-    console.log(req.query,account)
     if(account) {
         (async()=>{
             await Account.updateOne({
@@ -35,11 +34,12 @@ router.get('/confirm', (req, res) => {
 });
 
 router.post('/make-room', (req, res) => {
-    console.log(req.body);
     const newRoom = new Room({
         roomName: req.body.roomName,
         amountCitizen: req.body.amountCitizen,
         amountMafia: req.body.amountMafia,
+        process: false,
+        roomOwner: req.body.roomOwner,
     })
     newRoom.save((err, data) => {
         if(err) {
@@ -54,9 +54,9 @@ router.post('/make-room', (req, res) => {
 router.post('/join-room', (req, res) => {
     (async()=>{
         await Room.findOneAndUpdate({
-            _id:req.body.roomId
+            _id:req.body.roomId,
         }
-            ,{$set: 
+            ,{$push: 
                 { userList: [{
                         ip: req.body.ip,
                         nickname: req.body.nickname,
@@ -73,11 +73,58 @@ router.post('/join-room', (req, res) => {
 
 router.get('/get-rooms', (req, res) => {
     (async()=>{
-        await Room.find()
+        await Room.find({
+            process: false,
+        })
         .then((data) => {
             res.send({data:data});
         }).catch(err => {
             res.send({state:false,err:err});
+        });
+    })();
+});
+
+router.post('/get-ready', (req, res) => {
+    (async()=>{
+        await Room.findOneAndUpdate({
+            _id: req.body.params.roomId,
+            process: false,
+        }, {
+            $push: {
+                'voteList': {
+                    ip: req.body.params.ip,
+                    nickname: req.body.params.nickname,
+                }
+            }
+        })
+        .then(async(data) => {
+            const roomStat = await Room.findOne({
+                _id: req.body.params.roomId,
+            });
+            roomStat.userList.length === roomStat.voteList.length ? res.send({data:{state:true,allReady:true}}):res.send({data:{state:true,allReady:false}});
+        }).catch(err => {
+            res.send({data:{state:false,err:err}});
+        });
+    })();
+});
+
+router.post('/cancel-ready', (req, res) => {
+    (async()=>{
+        await Room.findOneAndUpdate({
+            _id: req.body.params.roomId,
+            process: false,
+        }, {
+            $pull: {
+                'voteList': {
+                    ip: req.body.params.ip,
+                    nickname: req.body.params.nickname,
+                }
+            }
+        })
+        .then(() => {
+            res.send({data:{state:true}});
+        }).catch(err => {
+            res.send({data:{state:false,err:err}});
         });
     })();
 });
