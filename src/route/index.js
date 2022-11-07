@@ -129,4 +129,22 @@ router.post('/cancel-ready', (req, res) => {
     })();
 });
 
+router.get('/get-myRole', (req, res) => {
+    (async()=>{
+        await Room.findOne({
+            _id: req.query.roomId,
+            process: true,
+        })
+        .then((data) => {
+            const userRole = {userList:data.userList}
+            userRole.role = data.mafiaList.filter((item)=> item.ip === req.query.ip && item.nickname === req.query.nickname).length!==0?'mafia':'citizen'
+            console.log("userRole",userRole);
+            res.send({data:userRole});
+            return 
+        }).catch(err => {
+            res.send({data:{state:false,err:err}});
+        });
+    })();
+});
+
 module.exports = router;

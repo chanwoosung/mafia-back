@@ -72,7 +72,8 @@ module.exports = function (socketIo) {
         await room.updateMany({_id:requestData.roomId},{$set: {
           'mafiaList': mafiaList,
           'citizenList': citizenList,
-        }})
+        }});
+        sendMessage(socketIo,SOCKET_EVENT.GAME_START,requestData);
       })();
     });
 
