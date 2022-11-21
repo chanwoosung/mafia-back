@@ -1,6 +1,7 @@
 const colors = require("colors/safe");
 const room = require("../dto/room");
 const shuffle = require("../shuffle");
+const timer = require("../timer");
 
 const SOCKET_EVENT = {
   JOIN_ROOM: "JOIN_ROOM",
@@ -12,6 +13,7 @@ const SOCKET_EVENT = {
   CANCEL_READY: "CANCEL_READY",
   ALL_READY: "ALL_READY",
   GAME_START: "GAME_START",
+  START_VOTE: "START_VOTE",
 };
 
 const sendMessage = (socketIo,type,requestData) => {
@@ -58,7 +60,7 @@ module.exports = function (socketIo) {
     });
 
     socket.on(SOCKET_EVENT.ALL_READY, requestData => {
-      console.log(requestData);
+      console.log('ALL READY!!');
       (async()=>{
         await room.updateMany({_id:requestData.roomId},{$set: {'process':true,'voteList':[]}});
         const data = await room.findOne({_id:requestData.roomId});
@@ -74,6 +76,13 @@ module.exports = function (socketIo) {
           'citizenList': citizenList,
         }});
         sendMessage(socketIo,SOCKET_EVENT.GAME_START,requestData);
+        const nowTime = new Date().getTime();
+        const flag = timer(nowTime+100000,
+          ()=>{
+            console.log(requestData);
+              sendMessage(socketIo,SOCKET_EVENT.START_VOTE,{...requestData,content:'투표를 시작해주세요'});
+      }
+        );
       })();
     });
 
