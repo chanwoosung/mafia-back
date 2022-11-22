@@ -14,6 +14,7 @@ const SOCKET_EVENT = {
   ALL_READY: "ALL_READY",
   GAME_START: "GAME_START",
   START_VOTE: "START_VOTE",
+  RECEIVE_EVENT: "RECEIVE_EVENT",
 };
 
 const sendMessage = (socketIo,type,requestData) => {
@@ -23,6 +24,15 @@ const sendMessage = (socketIo,type,requestData) => {
     time: new Date(),
   };
   socketIo.to(requestData.roomId).emit(SOCKET_EVENT.RECEIVE_MESSAGE, responseData);
+}
+
+const sendEvent = (socketIo,type,requestData) => {
+  const responseData = {
+    ...requestData,
+    type,
+    time: new Date(),
+  };
+  socketIo.to(requestData.roomId).emit(SOCKET_EVENT.RECEIVE_EVENT, responseData);
 }
 
 module.exports = function (socketIo) {
@@ -75,6 +85,7 @@ module.exports = function (socketIo) {
           'mafiaList': mafiaList,
           'citizenList': citizenList,
         }});
+        sendEvent(socketIo,SOCKET_EVENT.GAME_START,requestData);
         sendMessage(socketIo,SOCKET_EVENT.GAME_START,requestData);
         const nowTime = new Date().getTime();
         const flag = timer(nowTime+100000,
