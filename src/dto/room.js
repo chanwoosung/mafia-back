@@ -17,6 +17,7 @@ const roomSchema = new mongoose.Schema({
     userList: [{
         ip: String,
         nickname: String,
+        live: Boolean,
     }],
     mafiaList: [{
         ip: String,

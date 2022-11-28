@@ -1,4 +1,5 @@
 const colors = require("colors/safe");
+const calculateArray = require("../calculateArray");
 const room = require("../dto/room");
 const shuffle = require("../shuffle");
 const timer = require("../timer");
@@ -15,6 +16,7 @@ const SOCKET_EVENT = {
   GAME_START: "GAME_START",
   START_VOTE: "START_VOTE",
   RECEIVE_EVENT: "RECEIVE_EVENT",
+  ANNOUNCE_RESULT: "ANNOUNCE_RESULT",
 };
 
 const sendMessage = (socketIo,type,requestData) => {
@@ -43,6 +45,21 @@ module.exports = function (socketIo) {
     console.log("Connected to Browser");
     console.log(`${colors.brightGreen("socket connection succeeded.")}`);
 
+    socket.on(SOCKET_EVENT.ANNOUNCE_RESULT, requestData => {
+      // sendMessage(socketIo,SOCKET_EVENT.SEND_MESSAGE,{...requestData,content:'개표하겠습니다!!'});
+      (async()=>{
+        const roomData = await room.findOne({
+            _id:requestData.roomId
+            }
+        )
+        const result = calculateArray(roomData.userList,roomData.voteList)
+        console.log("-----------------")
+        console.log(result);
+        console.log("-----------------")
+        sendEvent(socketIo,SOCKET_EVENT.ANNOUNCE_RESULT,{...requestData,content:result});
+      })();
+    });
+
     socket.on(SOCKET_EVENT.JOIN_ROOM, requestData => {
       console.log(requestData.roomId);
       socket.join(requestData.roomId);
@@ -62,6 +79,7 @@ module.exports = function (socketIo) {
                 { 'userList': {
                         ip: requestData.ip,
                         nickname: requestData.nickname,
+                        live: true,
                     } 
                 }
               }
