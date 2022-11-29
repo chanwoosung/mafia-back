@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Account = require('../dto/account');
 const Room = require('../dto/room');
+const socket = require('../socket');
 router.get('/', (req, res) => {
     Account.createCollection();
     res.send('Welcome Home')
@@ -148,35 +149,5 @@ router.get('/get-myRole', (req, res) => {
     })();
 });
 
-router.post('/vote-mafia', (req, res) => {
-    (async()=>{
-        console.log(req.query)
-        console.log(req.body)
-        Room.findOneAndUpdate({
-            _id: req.body.params.roomId,
-            process: true,
-        }, {
-            $push: {
-                'voteList': {
-                    ip: req.body.params.ip,
-                    nickname: req.body.params.vote,
-                }
-            }
-        })
-        .then(async (data) => {
-            console.log(data);
-            const roomData = await Room.findOne({
-                _id: req.body.params.roomId,
-                process: true,
-            });
-            if (roomData.voteList.length === roomData.userList.length)
-                res.send({ data: { state: true, allReady: true } });
-            else
-                res.send({ data: { state: true, allReady: false  } });
-        }).catch(err => {
-            res.send({ data: { state: false, err: err } });
-        });
-    })();
-});
 
 module.exports = router;

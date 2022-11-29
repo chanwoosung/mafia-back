@@ -17,6 +17,10 @@ const SOCKET_EVENT = {
   START_VOTE: "START_VOTE",
   RECEIVE_EVENT: "RECEIVE_EVENT",
   ANNOUNCE_RESULT: "ANNOUNCE_RESULT",
+  GAME_CONTINUE: "GAME_CONTINUE",
+  GAME_END: "GAME_END",
+  MAFIA_TIME: "MAFIA_TIME",
+  KILL_CITIZEN: "KILL_CITIZEN",
 };
 
 const sendMessage = (socketIo,type,requestData) => {
@@ -45,6 +49,17 @@ module.exports = function (socketIo) {
     console.log("Connected to Browser");
     console.log(`${colors.brightGreen("socket connection succeeded.")}`);
 
+    socket.on(SOCKET_EVENT.KILL_CITIZEN, requestData => {
+      (async()=>{
+        sendEvent(socketIo,SOCKET_EVENT.KILL_CITIZEN,{...requestData,content:`${requestData.nickname}님이 마피아에게 살해당했습니다.`});
+        sendMessage(socketIo,SOCKET_EVENT.START_VOTE,{...requestData,content:'2분 뒤 투표가 다시 시작됩니다.'});
+        ()=>{
+          console.log(requestData);
+            sendMessage(socketIo,SOCKET_EVENT.START_VOTE,{...requestData,content:'투표를 시작해주세요'});
+        }
+      })();
+    });
+
     socket.on(SOCKET_EVENT.ANNOUNCE_RESULT, requestData => {
       // sendMessage(socketIo,SOCKET_EVENT.SEND_MESSAGE,{...requestData,content:'개표하겠습니다!!'});
       (async()=>{
@@ -52,11 +67,20 @@ module.exports = function (socketIo) {
             _id:requestData.roomId
             }
         )
-        const result = calculateArray(roomData.userList,roomData.voteList)
-        console.log("-----------------")
-        console.log(result);
-        console.log("-----------------")
+        const result = calculateArray(roomData.userList,roomData.voteList);
         sendEvent(socketIo,SOCKET_EVENT.ANNOUNCE_RESULT,{...requestData,content:result});
+        if(checkJob(result.nicknameArr[0],userList)){
+          sendEvent(socketIo,SOCKET_EVENT.GAME_END,{...requestData,content:`처형된 사람은 마피아이였습니다. 게임이 끝났습니다.`});
+        } else {
+          await room.findOneAndUpdate({
+            _id:requestData.roomId
+          },{
+            $set:{
+              voteList:[],
+            }
+          })
+          sendEvent(socketIo,SOCKET_EVENT.MAFIA_TIME,{...requestData,content:`처형된 사람은 일반인이였습니다. 마피아는 죽일 시민을 정해주세요.`});
+        }
       })();
     });
 
@@ -114,38 +138,6 @@ module.exports = function (socketIo) {
         );
       })();
     });
-
-    // socket.on(SOCKET_EVENT.GET_READY,requestData => {
-    //   (async()=>{
-    //     await room.updateOne({
-    //         _id:requestData.roomId
-    //         }
-    //         ,{$set: 
-    //             { 'voteList': {
-    //                     ip: requestData.ip,
-    //                     nickname: requestData.nickname,
-    //                 } 
-    //             }
-    //           }
-    //     )
-    //   })();
-    // });
-
-    // socket.on(SOCKET_EVENT.QUIT_ROOM,requestData => {
-    //   (async()=>{
-    //     await room.updateOne({
-    //         _id:requestData.roomId
-    //         }
-    //         ,{$pull: 
-    //             { 'voteList': {
-    //                     ip: requestData.ip,
-    //                     nickname: requestData.nickname,
-    //                 } 
-    //             }
-    //           }
-    //     )
-    //   })();
-    // });
 
     socket.on("disconnect", reason => {
       console.log(`${colors.brightGreen("disconnect")}: ${reason}`);
