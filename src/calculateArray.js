@@ -1,6 +1,7 @@
 module.exports = function calculateArray(userList,voteList) {
   let count = 0;
   let nicknameArr = [];
+  let idArr = [];
   console.log("************************");
   userList.filter(element => {
     console.log(element)
@@ -15,11 +16,13 @@ module.exports = function calculateArray(userList,voteList) {
         console.log(index, voteList.length);
         if(num !==0 && num === count) {
           nicknameArr.push(element.nickname);
+          idArr.push(element._id);
           console.log('???',num,count,parseInt(num) == parseInt(count),parseInt(num) == parseInt(count),(num) ===(count));
         }
         if(num > count) {
           nicknameArr=[];
           nicknameArr.push(element.nickname);
+          idArr.push(element._id);
           count = num;
         }
       }
@@ -28,6 +31,7 @@ module.exports = function calculateArray(userList,voteList) {
   });
   return {
     count,
-    nicknameArr
+    nicknameArr,
+    idArr
   }
 }
