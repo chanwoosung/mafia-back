@@ -170,7 +170,7 @@ router.post('/vote-mafia', (req, res) => {
                 _id: req.body.params.roomId,
                 process: true,
             });
-            if (roomData.voteList.length === roomData.userList.length)
+            if (roomData.voteList.length === (roomData.citizenList.length+roomData.mafiaList.length))
                 res.send({ data: { state: true, allReady: true } });
             else
                 res.send({ data: { state: true, allReady: false  } });

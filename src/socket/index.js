@@ -53,20 +53,38 @@ module.exports = function (socketIo) {
 
     socket.on(SOCKET_EVENT.KILL_CITIZEN, requestData => {
       (async()=>{
-        sendEvent(socketIo,SOCKET_EVENT.KILL_CITIZEN,{...requestData,content:`${requestData.nickname}님이 마피아에게 살해당했습니다.`});
-        sendMessage(socketIo,SOCKET_EVENT.START_VOTE,{...requestData,content:'2분 뒤 투표가 다시 시작됩니다.'});
-        const nowTime = new Date().getTime();
-        const flag = timer(nowTime+100000,
-          ()=>{
-            console.log(requestData);
-              sendMessage(socketIo,SOCKET_EVENT.START_VOTE,{...requestData,content:'투표를 시작해주세요'});
-      })
+        console.log(requestData);
+        sendEvent(socketIo,SOCKET_EVENT.KILL_CITIZEN,{...requestData,content:`${requestData.nickname}님이 마피아에게 살해당했습니다.`,id:requestData.id,nickname:requestData.nickname});
+        await room.updateOne({
+          _id:requestData.roomId
+          },{
+          $pull: {
+            citizenList:{
+              _id:requestData.id
+            }
+          }
+        });
+        const resultData = await room.find({
+          _id:requestData.roomId
+        })
+        console.log(resultData)
+        if(resultData[0].citizenList.length === resultData[0].mafiaList.length) {
+          sendEvent(socketIo,SOCKET_EVENT.CITIZEN_GAME_END,{...requestData,content:`처형된 사람은 일반인이였습니다. 마피아의 승리입니다.`})
+        } else {
+
+          sendMessage(socketIo,SOCKET_EVENT.SEND_MESSAGE,{...requestData,content:'2분 뒤 투표가 다시 시작됩니다.'});
+          const nowTime = new Date().getTime();
+          const flag = timer(nowTime+100000,
+            ()=>{
+              console.log(requestData);
+                sendMessage(socketIo,SOCKET_EVENT.START_VOTE,{...requestData,content:'투표를 시작해주세요'});
+        })
+        }
        
       })();
     });
 
     socket.on(SOCKET_EVENT.ANNOUNCE_RESULT, requestData => {
-      // sendMessage(socketIo,SOCKET_EVENT.SEND_MESSAGE,{...requestData,content:'개표하겠습니다!!'});
       (async()=>{
         const roomData = await room.findOne({
             _id:requestData.roomId
@@ -75,13 +93,8 @@ module.exports = function (socketIo) {
         const result = calculateArray(roomData.userList,roomData.voteList);
         sendEvent(socketIo,SOCKET_EVENT.ANNOUNCE_RESULT,{...requestData,content:result});
         if(result.nicknameArr.length > 1) {
-          sendMessage(socketIo,SOCKET_EVENT.START_VOTE,{...requestData,content:'2분 뒤 투표가 다시 시작됩니다.'});
-          const nowTime = new Date().getTime();
-          const flag = timer(nowTime+100000,
-            ()=>{
-              console.log(requestData);
-                sendMessage(socketIo,SOCKET_EVENT.START_VOTE,{...requestData,content:'투표를 시작해주세요'});
-        })
+          sendMessage(socketIo,SOCKET_EVENT.SEND_MESSAGE,{...requestData,content:'2분 뒤 투표가 다시 시작됩니다.'});
+          sendEvent(socketIo,SOCKET_EVENT.MAFIA_TIME,{...requestData,content:`마피아는 죽일 시민을 정해주세요.`});
         } else 
         if(checkJob(result.nicknameArr[0],roomData.mafiaList)){
           console.log('$%^work$%^')
@@ -108,7 +121,7 @@ module.exports = function (socketIo) {
             _id:requestData.roomId
           })
           console.log(resultData)
-          if(resultData.citizenList.length === resultData.mafiaList.length) {
+          if(resultData[0].citizenList.length === resultData[0].mafiaList.length) {
             sendEvent(socketIo,SOCKET_EVENT.CITIZEN_GAME_END,{...requestData,content:`처형된 사람은 일반인이였습니다. 마피아의 승리입니다.`})
           } else {
             console.log("?!@#!@#!?");
